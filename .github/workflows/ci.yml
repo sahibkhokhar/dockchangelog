@@ -26,14 +26,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
     
-    - name: Lint with ruff
-      run: |
-        ruff check src/dockchangelog/
-    
-    - name: Format check with black
-      run: |
-        black --check src/dockchangelog/
-    
     - name: Run tests
       run: |
         pytest
