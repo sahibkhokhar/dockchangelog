@@ -28,11 +28,11 @@ jobs:
     
     - name: Lint with ruff
       run: |
-        ruff check dockchangelog/
+        ruff check src/dockchangelog/
     
     - name: Format check with black
       run: |
-        black --check dockchangelog/
+        black --check src/dockchangelog/
     
     - name: Run tests
       run: |
