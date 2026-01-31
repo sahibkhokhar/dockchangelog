@@ -49,14 +49,23 @@ def check(
         "--no-cache",
         help="disable cache for GitHub API responses",
     ),
+    no_interactive: bool = typer.Option(
+        False,
+        "--no-interactive",
+        help="show all results at once (no pausing between services)",
+    ),
 ):
     """
     check for docker image updates and show release notes
     
     This is the main command - it's safe and read-only.
+    By default, pauses after each service with updates.
     """
     # Load configuration
     config = load_config(config_file)
+    
+    # Use interactive mode if stdout is a terminal and not disabled
+    interactive = not no_interactive and console.is_terminal
     
     # Initialize components
     checker = DockerChecker(compose_dir)
@@ -86,6 +95,7 @@ def check(
     
     # Check each service
     services_with_updates = 0
+    services_checked = 0
     
     for svc in services:
         # Map to GitHub repo
@@ -111,6 +121,18 @@ def check(
         
         if has_update:
             services_with_updates += 1
+            services_checked += 1
+            
+            # In interactive mode, pause after showing each service with updates
+            if interactive and services_checked < len([s for s in services if mapper.map(s)]):
+                console.print()
+                console.print("[dim]Press Enter to continue to next service (or Ctrl+C to stop)...[/dim]", end="")
+                try:
+                    input()
+                except (KeyboardInterrupt, EOFError):
+                    console.print("\n")
+                    break
+                console.print()  # Add spacing after continue
     
     # Show summary
     formatter.show_summary(len(services), services_with_updates)
