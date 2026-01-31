@@ -1,0 +1,42 @@
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# packaging
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# uv
+.uv/
+uv.lock
+
+# testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# cache
+.cache/
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# os
+.DS_Store
+Thumbs.db

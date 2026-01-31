@@ -1,0 +1,31 @@
+# map docker images to github repositories
+image_mappings:
+  ghcr.io/traefik/traefik:latest: traefik/traefik
+  vaultwarden/server:latest: dani-garcia/vaultwarden
+
+# auto-detect repos from docker labels
+auto_detect_from_labels: true
+
+# github api token (optional, increases rate limit)
+# set this as environment variable: export GITHUB_TOKEN=your_token
+github_token: ${GITHUB_TOKEN}
+
+# cache settings
+cache:
+  enabled: true
+  ttl_hours: 24
+  path: ~/.cache/dockchangelog
+
+# output format
+output:
+  format: text  # text, json, markdown
+  show_summary: true
+  max_release_notes_lines: 10
+
+# update mode settings (for future use)
+update:
+  require_confirmation: true
+  protected_services:
+    - vaultwarden
+    - postgres
+  stop_timeout: 10

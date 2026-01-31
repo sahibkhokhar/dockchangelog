@@ -1,0 +1,17 @@
+services:
+  # Example with GHCR image
+  traefik:
+    image: ghcr.io/traefik/traefik:latest
+    container_name: traefik
+    labels:
+      org.opencontainers.image.source: https://github.com/traefik/traefik
+  
+  # Example with Docker Hub image
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+  
+  # Example that won't have a GitHub mapping
+  postgres:
+    image: postgres:latest
+    container_name: postgres
