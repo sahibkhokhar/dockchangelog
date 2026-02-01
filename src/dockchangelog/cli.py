@@ -154,8 +154,36 @@ def check(
         current_normalized = normalize_version(current_version)
         release_normalized = normalize_version(release.tag)
         
+        # Handle major version tags (e.g., "2" tracking latest "2.x.x")
+        # If current is a major version like "2" and latest starts with "2.", 
+        # consider them matching (user is intentionally tracking that major version)
+        def is_major_version_match(current: str, latest: str) -> bool:
+            """Check if current is a major version tag tracking the latest release."""
+            # Check if current looks like a major version (just digits, optionally with .0)
+            if current.replace('.0', '').replace('.', '').isdigit() and len(current.split('.')) <= 2:
+                # Check if latest starts with current major version
+                latest_parts = latest.split('.')
+                current_parts = current.split('.')
+                
+                # If current is "2" or "2.0", check if latest is "2.x.x"
+                if len(current_parts) >= 1 and len(latest_parts) >= 1:
+                    if current_parts[0] == latest_parts[0]:
+                        # If current is just major (like "2"), it matches "2.x.x"
+                        if len(current_parts) == 1:
+                            return True
+                        # If current is "2.0", check if latest is "2.0.x"
+                        if len(current_parts) == 2 and len(latest_parts) >= 2:
+                            if current_parts[1] == latest_parts[1]:
+                                return True
+            return False
+        
         # Check if update available
-        has_update = current_normalized != release_normalized
+        if current_normalized == release_normalized:
+            has_update = False
+        elif is_major_version_match(current_normalized, release_normalized):
+            has_update = False  # Already tracking this major version
+        else:
+            has_update = True
         
         # Show results (display original versions, not normalized)
         formatter.show_service_update(svc.name, current_version, release, has_update)
