@@ -115,6 +115,40 @@ class ComposeService:
         except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
             return {}
     
+    def get_running_image_version(self) -> Optional[str]:
+        """
+        Get the actual version/tag of the running container's image.
+        
+        This checks what the container is ACTUALLY running, not what's in compose.
+        Useful when compose file uses 'latest' but you want the real version.
+        
+        Returns:
+            Version string from image labels, or None if unavailable
+        """
+        try:
+            # Try to get version from image labels
+            image_labels = self.get_image_labels()
+            
+            # Check for OCI standard version label
+            version = image_labels.get("org.opencontainers.image.version")
+            if version:
+                return version
+            
+            # Try other common version labels
+            for label_key in [
+                "version",
+                "org.label-schema.version",
+                "org.opencontainers.image.revision",
+            ]:
+                version = image_labels.get(label_key)
+                if version:
+                    return version
+            
+            return None
+        
+        except Exception:
+            return None
+    
     def is_running(self) -> bool:
         """Check if the container for this service is currently running."""
         if self._is_running is not None:

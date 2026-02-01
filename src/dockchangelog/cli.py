@@ -112,6 +112,9 @@ def check(
             formatter.show_error(f"service '{service}' not found")
             raise typer.Exit(1)
     
+    # Sort services alphabetically by name
+    services = sorted(services, key=lambda s: s.name.lower())
+    
     # Check each service
     services_with_updates = 0
     services_checked = 0
@@ -132,12 +135,30 @@ def check(
             console.print(f"[dim]• {svc.name}: no releases found for {repo}[/dim]")
             continue
         
-        # Check if update available (simple tag comparison)
-        current_tag = svc.image.tag
-        has_update = current_tag != release.tag
+        # Get the ACTUAL running version (not what's in compose file)
+        # This handles cases where compose uses 'latest' but we want real version
+        running_version = svc.get_running_image_version()
         
-        # Show results
-        formatter.show_service_update(svc.name, current_tag, release, has_update)
+        # Determine what version we're comparing
+        # Priority: running image version > compose file tag
+        current_version = running_version if running_version else svc.image.tag
+        
+        # Compare versions (normalize by removing 'v' prefix if present)
+        def normalize_version(v: str) -> str:
+            """Remove 'v' prefix and clean up version string."""
+            v = v.strip().lower()
+            if v.startswith('v'):
+                v = v[1:]
+            return v
+        
+        current_normalized = normalize_version(current_version)
+        release_normalized = normalize_version(release.tag)
+        
+        # Check if update available
+        has_update = current_normalized != release_normalized
+        
+        # Show results (display original versions, not normalized)
+        formatter.show_service_update(svc.name, current_version, release, has_update)
         
         if has_update:
             services_with_updates += 1
@@ -153,7 +174,7 @@ def check(
                         tagged_for_update.append({
                             'name': svc.name,
                             'compose_file': svc.compose_file,
-                            'current': current_tag,
+                            'current': current_version,
                             'latest': release.tag,
                         })
                         console.print(f"[green]✓[/green] {svc.name} marked for update")
@@ -188,18 +209,28 @@ def check(
                 by_compose[compose_file] = []
             by_compose[compose_file].append(item['name'])
         
+        # Sort compose files alphabetically
+        sorted_compose_files = sorted(by_compose.items())
+        
         # Create a single bash script
         console.print("[dim]# Copy and paste this script:[/dim]")
         console.print()
         
         sudo_prefix = "sudo " if use_sudo else ""
         
-        for compose_file, service_names in by_compose.items():
+        commands = []
+        for compose_file, service_names in sorted_compose_files:
             compose_dir = Path(compose_file).parent
-            services_str = ' '.join(service_names)
-            console.print(f"cd {compose_dir} && {sudo_prefix}docker compose pull {services_str} && {sudo_prefix}docker compose up -d {services_str} && \\")
+            services_str = ' '.join(sorted(service_names))  # Also sort service names
+            commands.append(f"cd {compose_dir} && {sudo_prefix}docker compose pull {services_str} && {sudo_prefix}docker compose up -d {services_str}")
         
-        # Remove trailing && \
+        # Join commands with && \ but not on the last one
+        for i, cmd in enumerate(commands):
+            if i < len(commands) - 1:
+                console.print(f"{cmd} && \\")
+            else:
+                console.print(cmd)  # No trailing && \ on the last command
+        
         console.print()
         console.print("[dim]# Or save to a file and run:[/dim]")
         console.print("[dim]# dockchangelog check > /tmp/updates.sh && bash /tmp/updates.sh[/dim]")
