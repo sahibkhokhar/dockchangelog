@@ -40,3 +40,8 @@ htmlcov/
 # os
 .DS_Store
 Thumbs.db
+
+# local docs
+PUBLISHING.md
+
+*.env

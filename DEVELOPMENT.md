@@ -9,7 +9,7 @@ quick setup with uv.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # clone and setup
-git clone https://github.com/yourusername/dockchangelog
+git clone https://github.com/sahibkhokhar/dockchangelog
 cd dockchangelog
 
 # create venv and install
@@ -44,6 +44,21 @@ uv run dockchangelog check
 src/dockchangelog/   - main package
 tests/               - test suite
 example/             - example compose files
+scripts/             - helper scripts
+.github/workflows/   - CI/CD pipelines
 ```
 
-see [ARCHITECTURE.md](ARCHITECTURE.md) for more details.
+## publishing
+
+see [PUBLISHING.md](PUBLISHING.md) for release workflow.
+
+**quick version bump:**
+```bash
+./scripts/bump_version.sh 0.5.1
+git add .
+git commit -m "Release v0.5.1"
+git tag v0.5.1
+git push origin main --tags
+```
+
+then create github release - CI will auto-publish to pypi!

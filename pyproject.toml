@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dockchangelog"
-version = "0.4.2"
+version = "0.5.0"
 description = "check docker updates with github release notes"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
+authors = [{name = "Sahib Khokhar", email = "skhokhar2003@gmail.com"}]
 readme = "readme.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -45,10 +45,10 @@ dev = [
 dockchangelog = "dockchangelog.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/dockchangelog"
-Repository = "https://github.com/yourusername/dockchangelog"
-Issues = "https://github.com/yourusername/dockchangelog/issues"
-Documentation = "https://github.com/yourusername/dockchangelog#readme"
+Homepage = "https://github.com/sahibkhokhar/dockchangelog"
+Repository = "https://github.com/sahibkhokhar/dockchangelog"
+Issues = "https://github.com/sahibkhokhar/dockchangelog/issues"
+Documentation = "https://github.com/sahibkhokhar/dockchangelog#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]

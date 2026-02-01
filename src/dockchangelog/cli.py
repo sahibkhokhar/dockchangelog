@@ -14,6 +14,7 @@ from .config import Config, create_example_config, load_config
 from .formatter import OutputFormatter
 from .github_client import GitHubClient
 from .mapper import ImageMapper
+from .update_checker import check_for_updates
 
 app = typer.Typer(
     name="dockchangelog",
@@ -88,6 +89,15 @@ def check(
     
     # Show header
     formatter.show_header()
+    
+    # Check for updates (non-blocking, shows notification if available)
+    update_info = check_for_updates()
+    if update_info:
+        current, latest, update_cmd = update_info
+        console.print()
+        console.print(f"[yellow]⚡ Update available:[/yellow] [dim]{current}[/dim] → [bold green]{latest}[/bold green]")
+        console.print(f"[dim]Run:[/dim] [cyan]{update_cmd}[/cyan]")
+        console.print()
     
     # Find and parse compose files
     services = checker.get_all_services()

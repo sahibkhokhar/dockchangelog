@@ -236,7 +236,7 @@ fi
 
 ## license
 
-mit license - see license file for details
+MIT license - see license file for details
 
 ## contributing
 
