@@ -59,6 +59,11 @@ def check(
         "--include-stopped",
         help="include stopped containers (by default only shows running)",
     ),
+    use_sudo: bool = typer.Option(
+        False,
+        "--sudo",
+        help="use sudo for docker commands",
+    ),
 ):
     """
     check for docker image updates and show release notes
@@ -73,7 +78,7 @@ def check(
     interactive = not no_interactive and console.is_terminal
     
     # Initialize components
-    checker = DockerChecker(compose_dir)
+    checker = DockerChecker(compose_dir, use_sudo=use_sudo)
     github = GitHubClient(
         token=config.github_token,
         cache_dir=None if no_cache else config.cache.path,
@@ -187,10 +192,12 @@ def check(
         console.print("[dim]# Copy and paste this script:[/dim]")
         console.print()
         
+        sudo_prefix = "sudo " if use_sudo else ""
+        
         for compose_file, service_names in by_compose.items():
             compose_dir = Path(compose_file).parent
             services_str = ' '.join(service_names)
-            console.print(f"cd {compose_dir} && docker compose pull {services_str} && docker compose up -d {services_str} && \\")
+            console.print(f"cd {compose_dir} && {sudo_prefix}docker compose pull {services_str} && {sudo_prefix}docker compose up -d {services_str} && \\")
         
         # Remove trailing && \
         console.print()

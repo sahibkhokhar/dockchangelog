@@ -59,12 +59,13 @@ class DockerImage:
 class ComposeService:
     """Represents a service from docker-compose."""
     
-    def __init__(self, name: str, image: DockerImage, compose_file: Path, labels: Dict[str, str]):
+    def __init__(self, name: str, image: DockerImage, compose_file: Path, labels: Dict[str, str], docker_cmd: List[str] = None):
         self.name = name
         self.image = image
         self.compose_file = compose_file
         self.labels = labels
         self._is_running = None  # Cache running status
+        self._docker_cmd = docker_cmd or ["docker"]  # Docker command prefix
     
     def get_source_label(self) -> Optional[str]:
         """Get org.opencontainers.image.source label if present."""
@@ -76,9 +77,12 @@ class ComposeService:
             return self._is_running
         
         try:
+            # Get docker command prefix (with or without sudo)
+            docker_cmd = getattr(self, '_docker_cmd', ["docker"])
+            
             # Check if container exists and is running
             result = subprocess.run(
-                ["docker", "compose", "-f", str(self.compose_file), "ps", "-q", self.name],
+                docker_cmd + ["compose", "-f", str(self.compose_file), "ps", "-q", self.name],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -88,7 +92,7 @@ class ComposeService:
             if result.returncode == 0 and result.stdout.strip():
                 container_id = result.stdout.strip()
                 check_running = subprocess.run(
-                    ["docker", "inspect", "-f", "{{.State.Running}}", container_id],
+                    docker_cmd + ["inspect", "-f", "{{.State.Running}}", container_id],
                     capture_output=True,
                     text=True,
                     timeout=5,
@@ -108,15 +112,18 @@ class ComposeService:
 class DockerChecker:
     """Check for Docker image updates."""
     
-    def __init__(self, compose_dir: Optional[Path] = None):
+    def __init__(self, compose_dir: Optional[Path] = None, use_sudo: bool = False):
         """
         Initialize checker.
         
         Args:
             compose_dir: Directory containing compose files. 
                         If None, uses current directory.
+            use_sudo: Whether to use sudo for docker commands.
         """
         self.compose_dir = Path(compose_dir) if compose_dir else Path.cwd()
+        self.use_sudo = use_sudo
+        self._docker_cmd = ["sudo", "docker"] if use_sudo else ["docker"]
     
     def find_compose_files(self) -> List[Path]:
         """
@@ -165,7 +172,7 @@ class DockerChecker:
                         for label in labels if "=" in label
                     }
                 
-                services.append(ComposeService(name, image, compose_file, labels))
+                services.append(ComposeService(name, image, compose_file, labels, self._docker_cmd))
             
             return services
         
