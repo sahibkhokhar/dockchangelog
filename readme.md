@@ -53,31 +53,57 @@ dockchangelog check --service myapp
 ```
 dockchangelog - checking for updates...
 
-✓ postgres: up to date
+• database: no github mapping found
 
-⚠  traefik: update available
-   Current: v2.10.7
-   Latest:  v3.0.0
-   Published: 2024-04-29
+⚠  app-backend: update available
+   Current: latest
+   Latest:  v2.5.0
+   Published: 2026-01-15
 
    ✨ Features:
-      • kubernetes gateway api provider
-      • improved middleware system
-      • new plugin architecture
+      • added new api endpoints
+      • improved performance by 40%
+      • added support for webhooks
 
    🐛 Fixes:
-      • fixed tls certificate reload
-      • resolved memory leak in tcp router
+      • fixed memory leak in background jobs
+      • resolved connection timeout issues
 
-   https://github.com/traefik/traefik/releases/tag/v3.0.0
+   https://github.com/example/app-backend/releases/tag/v2.5.0
+
+Press u to mark for update, Enter to skip, Ctrl+C to stop... u
+✓ app-backend marked for update
+
+⚠  monitoring: update available
+   Current: latest
+   Latest:  v3.1.0
+   Published: 2026-01-20
+
+   ✨ Features:
+      • new dashboard widgets
+      • improved alerting system
+
+   🐛 Fixes:
+      • fixed graph rendering issues
+
+   https://github.com/example/monitoring/releases/tag/v3.1.0
+
+Press u to mark for update, Enter to skip, Ctrl+C to stop... 
 
 ────────────────────────────────────────────────────────────
-Found 1 update available
+Found 2 updates available
 
-To update manually:
-  cd <service-directory>
-  docker compose pull
-  docker compose up -d
+Services marked for update:
+
+  • app-backend
+    latest → v2.5.0
+    /home/user/composes/app-backend/compose.yml
+
+To update these services, run:
+
+# Copy and paste this script:
+
+cd /home/user/composes/app-backend && docker compose pull app-backend && docker compose up -d app-backend && \
 ```
 
 ## configuration
@@ -142,9 +168,12 @@ dockchangelog tries multiple methods to map docker images to github repos:
 check for updates (main command):
 
 ```bash
-dockchangelog check                      # current directory
+dockchangelog check                      # current directory, running containers only
 dockchangelog check --compose-dir /path  # specific directory
 dockchangelog check --service myapp      # specific service
+dockchangelog check --include-stopped    # check all containers (including stopped)
+dockchangelog check --sudo               # use sudo for docker commands
+dockchangelog check --no-interactive     # disable interactive tagging
 dockchangelog check --no-cache           # disable cache
 ```
 
@@ -167,10 +196,13 @@ dockchangelog version
 
 ## tips
 
+- **by default, only running containers are checked** - use `--include-stopped` to check all
 - run from the parent directory containing your compose files
 - use `--service` to check one service quickly
 - set `GITHUB_TOKEN` environment variable to avoid rate limits
 - cache is stored in `~/.cache/dockchangelog` (expires after 24 hours)
+- use `--sudo` on systems where docker requires sudo
+- press `u` to tag services for update, get a single command to run them all
 
 ## exit codes
 
