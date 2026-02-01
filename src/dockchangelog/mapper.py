@@ -57,8 +57,24 @@ class ImageMapper:
         if service.image.original in self.config.image_mappings:
             return self.config.image_mappings[service.image.original]
         
-        # 2. Check Docker labels (if enabled)
+        # 2. Check Docker IMAGE labels (from actual running container)
         if self.config.auto_detect_from_labels:
+            # First try the actual image labels (new approach!)
+            image_labels = service.get_image_labels()
+            if image_labels:
+                # Try various OCI label keys
+                for label_key in [
+                    "org.opencontainers.image.source",
+                    "org.opencontainers.image.url",
+                    "org.label-schema.vcs-url",
+                ]:
+                    source_url = image_labels.get(label_key)
+                    if source_url:
+                        repo = self._extract_repo_from_url(source_url)
+                        if repo:
+                            return repo
+            
+            # Fallback to compose file labels (old approach)
             source_url = service.get_source_label()
             if source_url:
                 repo = self._extract_repo_from_url(source_url)

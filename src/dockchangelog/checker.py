@@ -71,6 +71,50 @@ class ComposeService:
         """Get org.opencontainers.image.source label if present."""
         return self.labels.get("org.opencontainers.image.source")
     
+    def get_image_labels(self) -> Dict[str, str]:
+        """
+        Get labels from the actual Docker image (not compose file).
+        
+        This inspects the running container's image to extract OCI labels
+        like org.opencontainers.image.source which many maintainers include.
+        
+        Returns:
+            Dictionary of image labels, or empty dict if unavailable
+        """
+        try:
+            # Get docker command prefix (with or without sudo)
+            docker_cmd = getattr(self, '_docker_cmd', ["docker"])
+            
+            # First get the container ID
+            result = subprocess.run(
+                docker_cmd + ["compose", "-f", str(self.compose_file), "ps", "-q", self.name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            
+            if result.returncode != 0 or not result.stdout.strip():
+                return {}
+            
+            container_id = result.stdout.strip()
+            
+            # Now inspect the image labels from that container
+            inspect_result = subprocess.run(
+                docker_cmd + ["inspect", "--format", "{{json .Config.Labels}}", container_id],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            
+            if inspect_result.returncode == 0 and inspect_result.stdout.strip():
+                import json
+                return json.loads(inspect_result.stdout.strip())
+            
+            return {}
+        
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+            return {}
+    
     def is_running(self) -> bool:
         """Check if the container for this service is currently running."""
         if self._is_running is not None:
