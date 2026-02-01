@@ -64,10 +64,45 @@ class ComposeService:
         self.image = image
         self.compose_file = compose_file
         self.labels = labels
+        self._is_running = None  # Cache running status
     
     def get_source_label(self) -> Optional[str]:
         """Get org.opencontainers.image.source label if present."""
         return self.labels.get("org.opencontainers.image.source")
+    
+    def is_running(self) -> bool:
+        """Check if the container for this service is currently running."""
+        if self._is_running is not None:
+            return self._is_running
+        
+        try:
+            # Check if container exists and is running
+            result = subprocess.run(
+                ["docker", "compose", "-f", str(self.compose_file), "ps", "-q", self.name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            
+            # If we get a container ID, check if it's running
+            if result.returncode == 0 and result.stdout.strip():
+                container_id = result.stdout.strip()
+                check_running = subprocess.run(
+                    ["docker", "inspect", "-f", "{{.State.Running}}", container_id],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                self._is_running = check_running.stdout.strip() == "true"
+            else:
+                self._is_running = False
+            
+            return self._is_running
+        
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+            # If we can't check, assume it's not running
+            self._is_running = False
+            return False
 
 
 class DockerChecker:

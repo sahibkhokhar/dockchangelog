@@ -54,6 +54,11 @@ def check(
         "--no-interactive",
         help="show all results at once (no pausing between services)",
     ),
+    include_stopped: bool = typer.Option(
+        False,
+        "--include-stopped",
+        help="include stopped containers (by default only shows running)",
+    ),
 ):
     """
     check for docker image updates and show release notes
@@ -85,6 +90,15 @@ def check(
     if not services:
         formatter.show_no_services_found()
         raise typer.Exit(0)
+    
+    # Filter to only running services by default
+    if not include_stopped:
+        services = [s for s in services if s.is_running()]
+        if not services:
+            console.print("[yellow]⚠  No running services found[/yellow]")
+            console.print()
+            console.print("Use --include-stopped to check all services")
+            raise typer.Exit(0)
     
     # Filter to specific service if requested
     if service:
@@ -158,10 +172,10 @@ def check(
             console.print(f"    [dim]{item['compose_file']}[/dim]")
         
         console.print()
-        console.print("[bold]To update these services:[/bold]")
+        console.print("[bold]To update these services, run:[/bold]")
         console.print()
         
-        # Group by compose file for easier updating
+        # Group by compose file for batch updating
         by_compose = {}
         for item in tagged_for_update:
             compose_file = str(item['compose_file'])
@@ -169,13 +183,20 @@ def check(
                 by_compose[compose_file] = []
             by_compose[compose_file].append(item['name'])
         
+        # Create a single bash script
+        console.print("[dim]# Copy and paste this script:[/dim]")
+        console.print()
+        
         for compose_file, service_names in by_compose.items():
             compose_dir = Path(compose_file).parent
-            console.print(f"  [dim]# Update {', '.join(service_names)}[/dim]")
-            console.print(f"  cd {compose_dir}")
-            console.print(f"  docker compose pull {' '.join(service_names)}")
-            console.print(f"  docker compose up -d {' '.join(service_names)}")
-            console.print()
+            services_str = ' '.join(service_names)
+            console.print(f"cd {compose_dir} && docker compose pull {services_str} && docker compose up -d {services_str} && \\")
+        
+        # Remove trailing && \
+        console.print()
+        console.print("[dim]# Or save to a file and run:[/dim]")
+        console.print("[dim]# dockchangelog check > /tmp/updates.sh && bash /tmp/updates.sh[/dim]")
+        console.print()
     
     # Exit code: 0 if up to date, 1 if updates available
     raise typer.Exit(0 if services_with_updates == 0 else 1)
