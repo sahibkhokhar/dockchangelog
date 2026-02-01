@@ -96,6 +96,7 @@ def check(
     # Check each service
     services_with_updates = 0
     services_checked = 0
+    tagged_for_update = []  # Store services marked for update
     
     for svc in services:
         # Map to GitHub repo
@@ -124,11 +125,19 @@ def check(
             services_checked += 1
             
             # In interactive mode, pause after showing each service with updates
-            if interactive and services_checked < len([s for s in services if mapper.map(s)]):
+            if interactive:
                 console.print()
-                console.print("[dim]Press Enter to continue to next service (or Ctrl+C to stop)...[/dim]", end="")
+                console.print("[dim]Press [bold]u[/bold] to mark for update, [bold]Enter[/bold] to skip, [bold]Ctrl+C[/bold] to stop...[/dim] ", end="")
                 try:
-                    input()
+                    response = input().strip().lower()
+                    if response == 'u':
+                        tagged_for_update.append({
+                            'name': svc.name,
+                            'compose_file': svc.compose_file,
+                            'current': current_tag,
+                            'latest': release.tag,
+                        })
+                        console.print(f"[green]✓[/green] {svc.name} marked for update")
                 except (KeyboardInterrupt, EOFError):
                     console.print("\n")
                     break
@@ -136,6 +145,37 @@ def check(
     
     # Show summary
     formatter.show_summary(len(services), services_with_updates)
+    
+    # If services were tagged, show them and provide update commands
+    if tagged_for_update:
+        console.print()
+        console.print("[bold cyan]Services marked for update:[/bold cyan]")
+        console.print()
+        
+        for item in tagged_for_update:
+            console.print(f"  • [yellow]{item['name']}[/yellow]")
+            console.print(f"    {item['current']} → {item['latest']}")
+            console.print(f"    [dim]{item['compose_file']}[/dim]")
+        
+        console.print()
+        console.print("[bold]To update these services:[/bold]")
+        console.print()
+        
+        # Group by compose file for easier updating
+        by_compose = {}
+        for item in tagged_for_update:
+            compose_file = str(item['compose_file'])
+            if compose_file not in by_compose:
+                by_compose[compose_file] = []
+            by_compose[compose_file].append(item['name'])
+        
+        for compose_file, service_names in by_compose.items():
+            compose_dir = Path(compose_file).parent
+            console.print(f"  [dim]# Update {', '.join(service_names)}[/dim]")
+            console.print(f"  cd {compose_dir}")
+            console.print(f"  docker compose pull {' '.join(service_names)}")
+            console.print(f"  docker compose up -d {' '.join(service_names)}")
+            console.print()
     
     # Exit code: 0 if up to date, 1 if updates available
     raise typer.Exit(0 if services_with_updates == 0 else 1)
