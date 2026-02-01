@@ -100,22 +100,30 @@ def create_example_config() -> str:
     """Create example configuration file content."""
     return """# dockchangelog configuration
 
-# map docker images to github repositories
+# map docker images to github repositories (when auto-detection fails)
+# format: "image:tag": "github-org/repo"
 image_mappings:
-  ghcr.io/example-org/generic-app:latest: example-org/generic-app
-  vaultwarden/server:latest: dani-garcia/vaultwarden
+  # example: map official nginx to its github repo
+  nginx:latest: nginx/nginx
+  
+  # example: custom registry image
+  registry.example.com/myapp:latest: myorg/myapp
+  
+  # example: specific service mapping
+  jellyfin/jellyfin:latest: jellyfin/jellyfin
 
-# auto-detect repos from docker labels
+# auto-detect repos from docker image labels (recommended)
+# most modern images include org.opencontainers.image.source label
 auto_detect_from_labels: true
 
-# github api token (optional, increases rate limit)
+# github api token (optional, increases rate limit from 60 to 5000/hour)
 # set this as environment variable: export GITHUB_TOKEN=your_token
 github_token: ${GITHUB_TOKEN}
 
 # cache settings
 cache:
   enabled: true
-  ttl_hours: 24
+  ttl_hours: 24  # how long to cache github api responses
   path: ~/.cache/dockchangelog
 
 # output format
@@ -124,11 +132,13 @@ output:
   show_summary: true
   max_release_notes_lines: 10
 
-# update mode settings (for future use)
+# update mode settings (for interactive tagging)
 update:
   require_confirmation: true
   protected_services:
-    - vaultwarden
+    # services that require extra confirmation before update
+    - database
     - postgres
+    - mysql
   stop_timeout: 10
 """
